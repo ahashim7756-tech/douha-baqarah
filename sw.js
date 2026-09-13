@@ -1,5 +1,12 @@
-const CACHE_NAME = 'douha-baqarah-v9';
-const ASSETS_TO_CACHE = ['./', './index.html', './manifest.json'];
+const CACHE_NAME = 'douha-baqarah-v10';
+const ASSETS_TO_CACHE = [
+    './',
+    './index.html',
+    './manifest.json',
+    'https://cdn.tailwindcss.com',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+    'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700&display=swap'
+];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
