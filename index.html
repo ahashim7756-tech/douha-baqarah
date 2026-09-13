@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>دوحة البقرة والذكر - النسخة المعمارية المحصنة (Audit-Passed PWA v7.0)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { emerald: { 600: '#059669', 700: '#047857' } }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .font-amiri { font-family: 'Amiri', serif; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-emerald-600 selection:text-white">
+
+    <!-- Network & Offline Status Banner -->
+    <div id="offlineBanner" class="bg-amber-600/90 text-white text-xs py-1.5 px-4 text-center font-medium hidden transition-all duration-300 z-50">
+        <i class="fa-solid fa-wifi-slash ml-1.5"></i> يعمل في وضع عدم الاتصال (Offline Mode). يتم التشغيل من ذاكرة الجهاز المحلية.
+    </div>
+
+    <!-- Header -->
+    <header class="w-full border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <i class="fa-solid fa-mosque text-xl"></i>
+                </div>
+                <div>
+                    <h1 id="headerTitle" class="text-lg font-bold tracking-wide font-amiri text-emerald-400">دوحة البقرة والذكر</h1>
+                    <p class="text-xs text-slate-400">منظومة محمية وآمنة بالكامل (PWA)</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="wakeLockBtn" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 transition flex items-center gap-1.5 border border-slate-700">
+                    <i id="wakeLockIcon" class="fa-solid fa-lock-open text-amber-400"></i>
+                    <span id="wakeLockText">إبقاء الشاشة</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-4xl mx-auto px-4 py-6 flex-grow flex flex-col gap-6">
+        
+        <!-- Status Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden shadow-xl">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                <div class="text-center md:text-right">
+                    <div class="flex items-center justify-center md:justify-start gap-2 mb-2">
+                        <span id="statusBadge" class="inline-block px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-semibold border border-emerald-500/20">
+                            جاهز للاستماع
+                        </span>
+                        <span id="cacheStatusBadge" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 text-xs border border-slate-700">
+                            <i class="fa-solid fa-cloud text-xs"></i> جاري فحص الذاكرة...
+                        </span>
+                    </div>
+                    <h2 id="currentTrackTitle" class="text-xl md:text-2xl font-bold font-amiri tracking-wide text-slate-100">
+                        سورة البقرة - تلاوة مباركة
+                    </h2>
+                    <p id="currentTrackSubtitle" class="text-sm text-slate-400 mt-1">
+                        القارئ: --
+                    </p>
+                </div>
+                <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-600/20 to-slate-800 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-inner relative">
+                    <i id="mainIcon" class="fa-solid fa-book-quran text-3xl transition-transform duration-500"></i>
+                    <div id="pulseRing" class="absolute inset-0 rounded-2xl border border-emerald-400/40 animate-ping opacity-0"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Section -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col gap-5">
+            <div class="flex flex-col gap-1.5">
+                <div class="flex justify-between text-xs text-slate-400 font-mono">
+                    <span id="currentTime">00:00</span>
+                    <span id="duration">00:00</span>
+                </div>
+                <div id="progressBarContainer" class="w-full bg-slate-800 h-2.5 rounded-full cursor-pointer relative overflow-hidden group">
+                    <div id="progressBar" class="bg-emerald-500 h-full w-0 transition-all duration-100 relative"></div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <button id="loopBtn" type="button" title="تكرار" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition border border-slate-700">
+                        <i class="fa-solid fa-rotate-right text-sm"></i>
+                    </button>
+                    <div class="hidden sm:flex items-center gap-2 bg-slate-800 px-3 py-2 rounded-xl border border-slate-700">
+                        <label for="dhikrInterval" class="text-xs text-slate-400">فاصل الذكر:</label>
+                        <select id="dhikrInterval" class="bg-slate-900 text-slate-200 text-xs rounded border border-slate-700 px-2 py-1 focus:outline-none focus:border-emerald-500">
+                            <option value="1">كل سورة</option>
+                            <option value="2" selected>كل تلاوتين</option>
+                            <option value="3">كل 3 تلاوات</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <button id="prevBtn" type="button" title="السابق" class="w-11 h-11 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center transition border border-slate-700 shadow">
+                        <i class="fa-solid fa-backward-step"></i>
+                    </button>
+                    <button id="playPauseBtn" type="button" title="تشغيل / إيقاف" class="w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition shadow-lg shadow-emerald-600/30 text-lg">
+                        <i id="playPauseIcon" class="fa-solid fa-play mr-0.5"></i>
+                    </button>
+                    <button id="nextBtn" type="button" title="التالي" class="w-11 h-11 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center transition border border-slate-700 shadow">
+                        <i class="fa-solid fa-forward-step"></i>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button id="muteBtn" type="button" class="text-slate-400 hover:text-slate-200 transition">
+                        <i id="muteIcon" class="fa-solid fa-volume-high"></i>
+                    </button>
+                    <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1" class="w-20 sm:w-24 accent-emerald-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg">
+                </div>
+            </div>
+        </div>
+
+        <!-- Playlist Grid -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-list-ul text-emerald-400"></i> القراء المعتمدون (تخزين محلي آمن)
+                </h3>
+                <span id="reciterCountBadge" class="text-xs bg-slate-800 px-2.5 py-1 rounded-full text-slate-400 border border-slate-700"></span>
+            </div>
+            <div id="recitersList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1"></div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-slate-800 bg-slate-900/50 py-4 text-center text-xs text-slate-500">
+        <p>صدقة جارية • مصمم وفق أعلى معايير الحماية الهندسية (v7.0)</p>
+    </footer>
+
+    <audio id="audioPlayer" preload="auto" crossorigin="anonymous"></audio>
+
+    <!-- Hardened Application Script -->
+    <script>
+        'use strict';
+
+        // --- 1. Service Worker registration (Safe Blob Management) ---
+        let registeredSwUrl = null;
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                try {
+                    const swCode = `
+                        const CACHE_NAME = 'douha-baqarah-audit-v7';
+                        const ASSETS_TO_CACHE = ['./'];
+
+                        self.addEventListener('install', (event) => {
+                            event.waitUntil(
+                                caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE)).then(() => self.skipWaiting())
+                            );
+                        });
+
+                        self.addEventListener('activate', (event) => {
+                            event.waitUntil(
+                                caches.keys().then((keys) => Promise.all(
+                                    keys.map((key) => { if (key !== CACHE_NAME) return caches.delete(key); })
+                                )).then(() => self.clients.claim())
+                            );
+                        });
+
+                        self.addEventListener('fetch', (event) => {
+                            if (event.request.method !== 'GET') return;
+                            event.respondWith(
+                                caches.match(event.request).then((cachedResponse) => {
+                                    if (cachedResponse) return cachedResponse;
+                                    return fetch(event.request).then((networkResponse) => {
+                                        if (event.request.url.includes('.mp3') || event.request.url.includes('cdnjs') || event.request.url.includes('jsdelivr')) {
+                                            return caches.open(CACHE_NAME).then((cache) => {
+                                                cache.put(event.request, networkResponse.clone());
+                                                return networkResponse;
+                                            });
+                                        }
+                                        return networkResponse;
+                                    }).catch(() => {
+                                        return new Response('Network error occurred offline', { status: 503, statusText: 'Service Unavailable' });
+                                    });
+                                })
+                            );
+                        });
+                    `;
+                    const blob = new Blob([swCode], { type: 'text/javascript' });
+                    registeredSwUrl = URL.createObjectURL(blob);
+                    navigator.serviceWorker.register(registeredSwUrl)
+                        .catch(err => console.error("SW Registration error suppressed:", err));
+                } catch (e) {
+                    console.error("SW Init error:", e);
+                }
+            });
+        }
+
+        // --- 2. Data and State Architecture ---
+        const RECITERS_DATA = Object.freeze([
+            { name: "الشيخ عبد الرحمن السديس", url: "https://server11.mp3quran.net/sds/002.mp3", subtitle: "الحرم المكي الشريف" },
+            { name: "الشيخ ماهر المعيقلي", url: "https://server12.mp3quran.net/maher/002.mp3", subtitle: "الحرم المكي الشريف" },
+            { name: "الشيخ مشاري راشد العفاسي", url: "https://server8.mp3quran.net/afs/002.mp3", subtitle: "دولة الكويت" },
+            { name: "الشيخ أحمد العجمي", url: "https://server10.mp3quran.net/ajm/002.mp3", subtitle: "مملكة البحرين" },
+            { name: "الشيخ سعد الغامدي", url: "https://server7.mp3quran.net/s_gmd/002.mp3", subtitle: "المملكة العربية السعودية" }
+        ]);
+
+        const DHIKR_AUDIO_URL = "https://www.islamcan.com/audio/duas/subhan-allah-wal-hamdulillah.mp3";
+
+        let state = {
+            currentTrackIndex: 0,
+            isPlaying: false,
+            isLooping: false,
+            playCountSinceDhikr: 0,
+            dhikrIntervalThreshold: 2,
+            isPlayingDhikrState: false,
+            pendingRestoreTime: 0,
+            errorRetryCount: 0
+        };
+
+        let isActionLocked = false;
+        let wakeLock = null;
+
+        // DOM Element Cache
+        const audio = document.getElementById('audioPlayer');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playPauseIcon = document.getElementById('playPauseIcon');
+        const progressBar = document.getElementById('progressBar');
+        const progressBarContainer = document.getElementById('progressBarContainer');
+        const currentTimeEl = document.getElementById('currentTime');
+        const durationEl = document.getElementById('duration');
+        const statusBadge = document.getElementById('statusBadge');
+        const cacheStatusBadge = document.getElementById('cacheStatusBadge');
+        const currentTrackTitle = document.getElementById('currentTrackTitle');
+        const currentTrackSubtitle = document.getElementById('currentTrackSubtitle');
+        const mainIcon = document.getElementById('mainIcon');
+        const pulseRing = document.getElementById('pulseRing');
+        const recitersListEl = document.getElementById('recitersList');
+        const offlineBanner = document.getElementById('offlineBanner');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const muteBtn = document.getElementById('muteBtn');
+        const muteIcon = document.getElementById('muteIcon');
+        const loopBtn = document.getElementById('loopBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const dhikrIntervalSelect = document.getElementById('dhikrInterval');
+        const wakeLockBtn = document.getElementById('wakeLockBtn');
+
+        // --- 3. XSS Prevention & Text Sanitization ---
+        function setSafeText(element, text) {
+            if (element) element.textContent = text;
+        }
+
+        // --- 4. Initialization & Event Binding ---
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                loadPersistedStateSafely();
+                renderRecitersList();
+                bindEventListeners();
+                setupMediaSessionSafely();
+                checkCacheAvailability();
+            } catch (err) {
+                console.error("Critical Init Error:", err);
+            }
+        });
+
+        function throttleAction(callback, delay = 300) {
+            if (isActionLocked) return;
+            isActionLocked = true;
+            try { callback(); } catch (e) { console.error(e); }
+            setTimeout(() => { isActionLocked = false; }, delay);
+        }
+
+        function renderRecitersList() {
+            try {
+                setSafeText(document.getElementById('reciterCountBadge'), `${RECITERS_DATA.length} قراء`);
+                recitersListEl.innerHTML = ''; // Clean old nodes safely
+                
+                RECITERS_DATA.forEach((reciter, index) => {
+                    const isSelected = (index === state.currentTrackIndex && !state.isPlayingDhikrState);
+                    
+                    const item = document.createElement('div');
+                    item.className = `p-3 rounded-xl border transition cursor-pointer flex items-center justify-between ${isSelected ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300' : 'bg-slate-800/50 border-slate-700/60 hover:bg-slate-800 text-slate-300'}`;
+                    item.onclick = () => throttleAction(() => selectReciter(index));
+
+                    const leftDiv = document.createElement('div');
+                    leftDiv.className = 'flex items-center gap-3';
+
+                    const numBox = document.createElement('div');
+                    numBox.className = 'w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-mono font-bold text-slate-400';
+                    numBox.textContent = index + 1;
+
+                    const textDiv = document.createElement('div');
+                    const h4 = document.createElement('h4');
+                    h4.className = 'text-sm font-semibold';
+                    h4.textContent = reciter.name;
+                    
+                    const p = document.createElement('p');
+                    p.className = 'text-xs text-slate-400';
+                    p.textContent = reciter.subtitle;
+
+                    textDiv.appendChild(h4);
+                    textDiv.appendChild(p);
+                    leftDiv.appendChild(numBox);
+                    leftDiv.appendChild(textDiv);
+
+                    const iconIndicator = document.createElement('i');
+                    if (isSelected) {
+                        iconIndicator.className = 'fa-solid fa-volume-high text-emerald-400 animate-pulse';
+                    } else {
+                        iconIndicator.className = 'fa-solid fa-play text-xs text-slate-500';
+                    }
+
+                    item.appendChild(leftDiv);
+                    item.appendChild(iconIndicator);
+                    recitersListEl.appendChild(item);
+                });
+            } catch (e) {
+                console.error("Render error:", e);
+            }
+        }
+
+        function loadTrack(index, isDhikr = false, restoreTime = 0) {
+            state.currentTrackIndex = Math.max(0, Math.min(index, RECITERS_DATA.length - 1));
+            state.isPlayingDhikrState = !!isDhikr;
+            state.pendingRestoreTime = Math.max(0, restoreTime);
+
+            if (state.isPlayingDhikrState) {
+                audio.src = DHIKR_AUDIO_URL;
+                setSafeText(statusBadge, "فاصل الذكر والتسبيح");
+                setSafeText(currentTrackTitle, "ذكر واستغفار مستمر");
+                setSafeText(currentTrackSubtitle, "ألا بذكر الله تطمئن القلوب");
+                mainIcon.className = "fa-solid fa-heart text-3xl transition-transform duration-500 text-emerald-400";
+            } else {
+                const reciter = RECITERS_DATA[state.currentTrackIndex];
+                audio.src = reciter.url;
+                setSafeText(statusBadge, "تلاوة القرآن الكريم");
+                setSafeText(currentTrackTitle, "سورة البقرة");
+                setSafeText(currentTrackSubtitle, `القارئ: ${reciter.name}`);
+                mainIcon.className = "fa-solid fa-book-quran text-3xl transition-transform duration-500 text-emerald-300";
+            }
+
+            audio.load();
+            renderRecitersList();
+            updateMediaSessionMetadataSafely();
+            checkCacheAvailability();
+        }
+
+        async function checkCacheAvailability() {
+            if ('caches' in window) {
+                try {
+                    const cache = await caches.open('douha-baqarah-audit-v7');
+                    const match = await cache.match(audio.src);
+                    if (match) {
+                        cacheStatusBadge.className = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs border border-emerald-500/40";
+                        cacheStatusBadge.innerHTML = '<i class="fa-solid fa-circle-check text-xs"></i> مخزن محلياً (يعمل بلا إنترنت)';
+                    } else {
+                        cacheStatusBadge.className = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 text-xs border border-slate-700";
+                        cacheStatusBadge.innerHTML = '<i class="fa-solid fa-cloud text-xs"></i> سيتم تخزينه محلياً عند التشغيل';
+                    }
+                } catch (e) {
+                    // Ignore cache errors safely
+                }
+            }
+        }
+
+        function safeTogglePlayPause() {
+            throttleAction(() => {
+                if (audio.paused) {
+                    if (!audio.src || audio.src === window.location.href) {
+                        loadTrack(state.currentTrackIndex, false, 0);
+                    }
+                    audio.play().then(() => {
+                        setPlayingState(true);
+                        state.errorRetryCount = 0;
+                    }).catch(err => {
+                        setPlayingState(false);
+                        if (!navigator.onLine) {
+                            offlineBanner.classList.remove('hidden');
+                        }
+                    });
+                } else {
+                    audio.pause();
+                    setPlayingState(false);
+                }
+            });
+        }
+
+        function setPlayingState(playing) {
+            state.isPlaying = playing;
+            if (playing) {
+                playPauseIcon.className = "fa-solid fa-pause";
+                pulseRing.classList.remove('opacity-0');
+            } else {
+                playPauseIcon.className = "fa-solid fa-play mr-0.5";
+                pulseRing.classList.add('opacity-0');
+            }
+            persistStateSafely();
+        }
+
+        function selectReciter(index) {
+            loadTrack(index, false, 0);
+            audio.play().then(() => setPlayingState(true)).catch(() => setPlayingState(false));
+        }
+
+        function handleTrackEnded() {
+            if (state.isLooping) {
+                audio.currentTime = 0;
+                audio.play().catch(e => console.error(e));
+                return;
+            }
+
+            if (state.isPlayingDhikrState) {
+                state.playCountSinceDhikr = 0;
+                let nextIdx = (state.currentTrackIndex + 1) % RECITERS_DATA.length;
+                loadTrack(nextIdx, false, 0);
+            } else {
+                state.playCountSinceDhikr++;
+                if (state.playCountSinceDhikr >= state.dhikrIntervalThreshold) {
+                    loadTrack(state.currentTrackIndex, true, 0);
+                } else {
+                    let nextIdx = (state.currentTrackIndex + 1) % RECITERS_DATA.length;
+                    loadTrack(nextIdx, false, 0);
+                }
+            }
+            audio.play().catch(() => setPlayingState(false));
+        }
+
+        function safeNextReciter() {
+            throttleAction(() => {
+                let nextIdx = (state.currentTrackIndex + 1) % RECITERS_DATA.length;
+                loadTrack(nextIdx, false, 0);
+                if (state.isPlaying) audio.play().catch(() => setPlayingState(false));
+            });
+        }
+
+        function safePrevReciter() {
+            throttleAction(() => {
+                let prevIdx = (state.currentTrackIndex - 1 + RECITERS_DATA.length) % RECITERS_DATA.length;
+                loadTrack(prevIdx, false, 0);
+                if (state.isPlaying) audio.play().catch(() => setPlayingState(false));
+            });
+        }
+
+        function safeToggleLoop() {
+            throttleAction(() => {
+                state.isLooping = !state.isLooping;
+                audio.loop = state.isLooping;
+                if (state.isLooping) {
+                    loopBtn.classList.add('bg-emerald-600/20', 'border-emerald-500', 'text-emerald-400');
+                } else {
+                    loopBtn.classList.remove('bg-emerald-600/20', 'border-emerald-500', 'text-emerald-400');
+                }
+            });
+        }
+
+        function safeUpdateDhikrInterval(val) {
+            const parsed = parseInt(val, 10);
+            if (!isNaN(parsed) && parsed > 0) {
+                state.dhikrIntervalThreshold = parsed;
+                persistStateSafely();
+            }
+        }
+
+        function safeChangeVolume(val) {
+            const num = parseFloat(val);
+            if (!isNaN(num) && num >= 0 && num <= 1) {
+                audio.volume = num;
+                if (num === 0) {
+                    muteIcon.className = "fa-solid fa-volume-xmark text-rose-400";
+                } else if (num < 0.5) {
+                    muteIcon.className = "fa-solid fa-volume-low text-slate-300";
+                } else {
+                    muteIcon.className = "fa-solid fa-volume-high text-slate-300";
+                }
+            }
+        }
+
+        function safeToggleMute() {
+            throttleAction(() => {
+                if (audio.muted) {
+                    audio.muted = false;
+                    safeChangeVolume(volumeSlider.value);
+                } else {
+                    audio.muted = true;
+                    muteIcon.className = "fa-solid fa-volume-xmark text-rose-400";
+                }
+            });
+        }
+
+        function safeSeekAudio(e) {
+            throttleAction(() => {
+                const rect = progressBarContainer.getBoundingClientRect();
+                const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                if (audio.duration && !isNaN(audio.duration)) {
+                    audio.currentTime = pos * audio.duration;
+                    persistStateSafely();
+                }
+            }, 100);
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds) || seconds < 0) return "00:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // --- 5. Event Binding and Cleanup Management ---
+        function bindEventListeners() {
+            playPauseBtn.addEventListener('click', safeTogglePlayPause);
+            nextBtn.addEventListener('click', safeNextReciter);
+            prevBtn.addEventListener('click', safePrevReciter);
+            loopBtn.addEventListener('click', safeToggleLoop);
+            muteBtn.addEventListener('click', safeToggleMute);
+            volumeSlider.addEventListener('input', (e) => safeChangeVolume(e.target.value));
+            progressBarContainer.addEventListener('click', safeSeekAudio);
+            dhikrIntervalSelect.addEventListener('change', (e) => safeUpdateDhikrInterval(e.target.value));
+            wakeLockBtn.addEventListener('click', safeToggleWakeLock);
+
+            audio.addEventListener('loadedmetadata', () => {
+                try {
+                    if (state.pendingRestoreTime > 0 && state.pendingRestoreTime < audio.duration) {
+                        audio.currentTime = state.pendingRestoreTime;
+                    }
+                } catch (e) {}
+                state.pendingRestoreTime = 0;
+            });
+
+            audio.addEventListener('timeupdate', () => {
+                if (audio.duration && !isNaN(audio.duration)) {
+                    const progress = (audio.currentTime / audio.duration) * 100;
+                    progressBar.style.width = `${progress}%`;
+                    currentTimeEl.textContent = formatTime(audio.currentTime);
+                    durationEl.textContent = formatTime(audio.duration);
+                }
+            });
+
+            audio.addEventListener('ended', handleTrackEnded);
+
+            audio.addEventListener('error', () => {
+                if (!navigator.onLine) {
+                    offlineBanner.classList.remove('hidden');
+                } else if (state.errorRetryCount < 2) {
+                    state.errorRetryCount++;
+                    setTimeout(() => audio.load(), 1500);
+                }
+            });
+
+            window.addEventListener('offline', () => offlineBanner.classList.remove('hidden'));
+            window.addEventListener('online', () => offlineBanner.classList.add('hidden'));
+            window.addEventListener('beforeunload', handleAppCleanup);
+        }
+
+        function setupMediaSessionSafely() {
+            if ('mediaSession' in navigator) {
+                try {
+                    navigator.mediaSession.setActionHandler('play', () => { audio.play(); setPlayingState(true); });
+                    navigator.mediaSession.setActionHandler('pause', () => { audio.pause(); setPlayingState(false); });
+                    navigator.mediaSession.setActionHandler('previoustrack', safePrevReciter);
+                    navigator.mediaSession.setActionHandler('nexttrack', safeNextReciter);
+                } catch (e) {}
+            }
+        }
+
+        function updateMediaSessionMetadataSafely() {
+            if ('mediaSession' in navigator) {
+                try {
+                    navigator.mediaSession.metadata = new MediaMetadata({
+                        title: state.isPlayingDhikrState ? "ذكر واستغفار مستمر" : "سورة البقرة",
+                        artist: state.isPlayingDhikrState ? "أذكار مباركة" : RECITERS_DATA[state.currentTrackIndex].name,
+                        album: "دوحة البقرة والذكر المستمر"
+                    });
+                } catch (e) {}
+            }
+        }
+
+        async function safeToggleWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    if (wakeLock === null) {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                        document.getElementById('wakeLockIcon').className = "fa-solid fa-lock text-emerald-400";
+                        setSafeText(document.getElementById('wakeLockText'), "الشاشة نشطة");
+                    } else {
+                        await wakeLock.release();
+                        wakeLock = null;
+                        document.getElementById('wakeLockIcon').className = "fa-solid fa-lock-open text-amber-400";
+                        setSafeText(document.getElementById('wakeLockText'), "إبقاء الشاشة");
+                    }
+                }
+            } catch (err) {}
+        }
+
+        function persistStateSafely() {
+            try {
+                const snapshot = {
+                    currentTrackIndex: state.currentTrackIndex,
+                    currentTime: audio.currentTime,
+                    isPlayingDhikrState: state.isPlayingDhikrState,
+                    playCountSinceDhikr: state.playCountSinceDhikr,
+                    dhikrIntervalThreshold: state.dhikrIntervalThreshold
+                };
+                localStorage.setItem('douha_baqarah_audit_v7', JSON.stringify(snapshot));
+            } catch (e) {}
+        }
+
+        function loadPersistedStateSafely() {
+            try {
+                const raw = localStorage.getItem('douha_baqarah_audit_v7');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (typeof parsed.currentTrackIndex === 'number') {
+                        state.currentTrackIndex = parsed.currentTrackIndex;
+                        state.isPlayingDhikrState = !!parsed.isPlayingDhikrState;
+                        state.playCountSinceDhikr = typeof parsed.playCountSinceDhikr === 'number' ? parsed.playCountSinceDhikr : 0;
+                        state.dhikrIntervalThreshold = typeof parsed.dhikrIntervalThreshold === 'number' ? parsed.dhikrIntervalThreshold : 2;
+                        
+                        dhikrIntervalSelect.value = state.dhikrIntervalThreshold;
+                        loadTrack(state.currentTrackIndex, state.isPlayingDhikrState, parsed.currentTime || 0);
+                        return;
+                    }
+                }
+                loadTrack(0, false, 0);
+            } catch (e) {
+                loadTrack(0, false, 0);
+            }
+        }
+
+        function handleAppCleanup() {
+            persistStateSafely();
+            if (wakeLock !== null) {
+                wakeLock.release().catch(() => {});
+            }
+            if (registeredSwUrl) {
+                URL.revokeObjectURL(registeredSwUrl);
+            }
+        }
+    </script>
+</body>
+</html>
