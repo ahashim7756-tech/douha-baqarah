@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>دوحة البقرة والذكر - النسخة المعمارية المحصنة (Audit-Passed PWA v7.0)</title>
+    <title>دوحة البقرة والذكر - النسخة المحصنة والمحدثة (PWA v9.0)</title>
+    
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#059669">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -27,9 +33,9 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-emerald-600 selection:text-white">
 
-    <!-- Network & Offline Status Banner -->
+    <!-- Offline Banner -->
     <div id="offlineBanner" class="bg-amber-600/90 text-white text-xs py-1.5 px-4 text-center font-medium hidden transition-all duration-300 z-50">
-        <i class="fa-solid fa-wifi-slash ml-1.5"></i> يعمل في وضع عدم الاتصال (Offline Mode). يتم التشغيل من ذاكرة الجهاز المحلية.
+        <i class="fa-solid fa-wifi-slash ml-1.5"></i> يعمل في وضع عدم الاتصال (Offline Mode). التشغيل من الذاكرة المحلية.
     </div>
 
     <!-- Header -->
@@ -40,8 +46,8 @@
                     <i class="fa-solid fa-mosque text-xl"></i>
                 </div>
                 <div>
-                    <h1 id="headerTitle" class="text-lg font-bold tracking-wide font-amiri text-emerald-400">دوحة البقرة والذكر</h1>
-                    <p class="text-xs text-slate-400">منظومة محمية وآمنة بالكامل (PWA)</p>
+                    <h1 class="text-lg font-bold tracking-wide font-amiri text-emerald-400">دوحة البقرة والذكر</h1>
+                    <p class="text-xs text-slate-400">منظومة رقمية محمية وقابلة للتثبيت</p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
@@ -53,7 +59,7 @@
         </div>
     </header>
 
-    <!-- Main Container -->
+    <!-- Main Section -->
     <main class="w-full max-w-4xl mx-auto px-4 py-6 flex-grow flex flex-col gap-6">
         
         <!-- Status Card -->
@@ -82,7 +88,7 @@
             </div>
         </div>
 
-        <!-- Controls Section -->
+        <!-- Controls -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col gap-5">
             <div class="flex flex-col gap-1.5">
                 <div class="flex justify-between text-xs text-slate-400 font-mono">
@@ -130,7 +136,7 @@
             </div>
         </div>
 
-        <!-- Playlist Grid -->
+        <!-- Reciters List Grid -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col gap-4">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 class="font-bold text-slate-200 flex items-center gap-2">
@@ -144,70 +150,24 @@
 
     <!-- Footer -->
     <footer class="w-full border-t border-slate-800 bg-slate-900/50 py-4 text-center text-xs text-slate-500">
-        <p>صدقة جارية • مصمم وفق أعلى معايير الحماية الهندسية (v7.0)</p>
+        <p>صدقة جارية • مصمم بأعلى معايير الحماية الهندسية وقابل للتثبيت (v9.0)</p>
     </footer>
 
     <audio id="audioPlayer" preload="auto" crossorigin="anonymous"></audio>
 
-    <!-- Hardened Application Script -->
+    <!-- Application Script -->
     <script>
         'use strict';
 
-        // --- 1. Service Worker registration (Safe Blob Management) ---
-        let registeredSwUrl = null;
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                try {
-                    const swCode = `
-                        const CACHE_NAME = 'douha-baqarah-audit-v7';
-                        const ASSETS_TO_CACHE = ['./'];
-
-                        self.addEventListener('install', (event) => {
-                            event.waitUntil(
-                                caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE)).then(() => self.skipWaiting())
-                            );
-                        });
-
-                        self.addEventListener('activate', (event) => {
-                            event.waitUntil(
-                                caches.keys().then((keys) => Promise.all(
-                                    keys.map((key) => { if (key !== CACHE_NAME) return caches.delete(key); })
-                                )).then(() => self.clients.claim())
-                            );
-                        });
-
-                        self.addEventListener('fetch', (event) => {
-                            if (event.request.method !== 'GET') return;
-                            event.respondWith(
-                                caches.match(event.request).then((cachedResponse) => {
-                                    if (cachedResponse) return cachedResponse;
-                                    return fetch(event.request).then((networkResponse) => {
-                                        if (event.request.url.includes('.mp3') || event.request.url.includes('cdnjs') || event.request.url.includes('jsdelivr')) {
-                                            return caches.open(CACHE_NAME).then((cache) => {
-                                                cache.put(event.request, networkResponse.clone());
-                                                return networkResponse;
-                                            });
-                                        }
-                                        return networkResponse;
-                                    }).catch(() => {
-                                        return new Response('Network error occurred offline', { status: 503, statusText: 'Service Unavailable' });
-                                    });
-                                })
-                            );
-                        });
-                    `;
-                    const blob = new Blob([swCode], { type: 'text/javascript' });
-                    registeredSwUrl = URL.createObjectURL(blob);
-                    navigator.serviceWorker.register(registeredSwUrl)
-                        .catch(err => console.error("SW Registration error suppressed:", err));
-                } catch (e) {
-                    console.error("SW Init error:", e);
-                }
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
             });
         }
 
-        // --- 2. Data and State Architecture ---
         const RECITERS_DATA = Object.freeze([
+            { name: "الشيخ ياسر الدوسري", url: "https://server11.mp3quran.net/yasser/002.mp3", subtitle: "الحرم المكي الشريف" },
+            { name: "الشيخ فارس عباد", url: "https://server8.mp3quran.net/frs_a/002.mp3", subtitle: "جمهورية اليمن" },
             { name: "الشيخ عبد الرحمن السديس", url: "https://server11.mp3quran.net/sds/002.mp3", subtitle: "الحرم المكي الشريف" },
             { name: "الشيخ ماهر المعيقلي", url: "https://server12.mp3quran.net/maher/002.mp3", subtitle: "الحرم المكي الشريف" },
             { name: "الشيخ مشاري راشد العفاسي", url: "https://server8.mp3quran.net/afs/002.mp3", subtitle: "دولة الكويت" },
@@ -231,7 +191,6 @@
         let isActionLocked = false;
         let wakeLock = null;
 
-        // DOM Element Cache
         const audio = document.getElementById('audioPlayer');
         const playPauseBtn = document.getElementById('playPauseBtn');
         const playPauseIcon = document.getElementById('playPauseIcon');
@@ -256,12 +215,10 @@
         const dhikrIntervalSelect = document.getElementById('dhikrInterval');
         const wakeLockBtn = document.getElementById('wakeLockBtn');
 
-        // --- 3. XSS Prevention & Text Sanitization ---
         function setSafeText(element, text) {
             if (element) element.textContent = text;
         }
 
-        // --- 4. Initialization & Event Binding ---
         document.addEventListener('DOMContentLoaded', () => {
             try {
                 loadPersistedStateSafely();
@@ -269,22 +226,20 @@
                 bindEventListeners();
                 setupMediaSessionSafely();
                 checkCacheAvailability();
-            } catch (err) {
-                console.error("Critical Init Error:", err);
-            }
+            } catch (err) {}
         });
 
         function throttleAction(callback, delay = 300) {
             if (isActionLocked) return;
             isActionLocked = true;
-            try { callback(); } catch (e) { console.error(e); }
+            try { callback(); } catch (e) {}
             setTimeout(() => { isActionLocked = false; }, delay);
         }
 
         function renderRecitersList() {
             try {
                 setSafeText(document.getElementById('reciterCountBadge'), `${RECITERS_DATA.length} قراء`);
-                recitersListEl.innerHTML = ''; // Clean old nodes safely
+                recitersListEl.innerHTML = '';
                 
                 RECITERS_DATA.forEach((reciter, index) => {
                     const isSelected = (index === state.currentTrackIndex && !state.isPlayingDhikrState);
@@ -315,19 +270,13 @@
                     leftDiv.appendChild(textDiv);
 
                     const iconIndicator = document.createElement('i');
-                    if (isSelected) {
-                        iconIndicator.className = 'fa-solid fa-volume-high text-emerald-400 animate-pulse';
-                    } else {
-                        iconIndicator.className = 'fa-solid fa-play text-xs text-slate-500';
-                    }
+                    iconIndicator.className = isSelected ? 'fa-solid fa-volume-high text-emerald-400 animate-pulse' : 'fa-solid fa-play text-xs text-slate-500';
 
                     item.appendChild(leftDiv);
                     item.appendChild(iconIndicator);
                     recitersListEl.appendChild(item);
                 });
-            } catch (e) {
-                console.error("Render error:", e);
-            }
+            } catch (e) {}
         }
 
         function loadTrack(index, isDhikr = false, restoreTime = 0) {
@@ -359,7 +308,7 @@
         async function checkCacheAvailability() {
             if ('caches' in window) {
                 try {
-                    const cache = await caches.open('douha-baqarah-audit-v7');
+                    const cache = await caches.open('douha-baqarah-v9');
                     const match = await cache.match(audio.src);
                     if (match) {
                         cacheStatusBadge.className = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs border border-emerald-500/40";
@@ -368,9 +317,7 @@
                         cacheStatusBadge.className = "inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 text-xs border border-slate-700";
                         cacheStatusBadge.innerHTML = '<i class="fa-solid fa-cloud text-xs"></i> سيتم تخزينه محلياً عند التشغيل';
                     }
-                } catch (e) {
-                    // Ignore cache errors safely
-                }
+                } catch (e) {}
             }
         }
 
@@ -383,11 +330,9 @@
                     audio.play().then(() => {
                         setPlayingState(true);
                         state.errorRetryCount = 0;
-                    }).catch(err => {
+                    }).catch(() => {
                         setPlayingState(false);
-                        if (!navigator.onLine) {
-                            offlineBanner.classList.remove('hidden');
-                        }
+                        if (!navigator.onLine) offlineBanner.classList.remove('hidden');
                     });
                 } else {
                     audio.pause();
@@ -416,7 +361,7 @@
         function handleTrackEnded() {
             if (state.isLooping) {
                 audio.currentTime = 0;
-                audio.play().catch(e => console.error(e));
+                audio.play().catch(() => {});
                 return;
             }
 
@@ -516,7 +461,6 @@
             return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         }
 
-        // --- 5. Event Binding and Cleanup Management ---
         function bindEventListeners() {
             playPauseBtn.addEventListener('click', safeTogglePlayPause);
             nextBtn.addEventListener('click', safeNextReciter);
@@ -611,13 +555,13 @@
                     playCountSinceDhikr: state.playCountSinceDhikr,
                     dhikrIntervalThreshold: state.dhikrIntervalThreshold
                 };
-                localStorage.setItem('douha_baqarah_audit_v7', JSON.stringify(snapshot));
+                localStorage.setItem('douha_baqarah_audit_v9', JSON.stringify(snapshot));
             } catch (e) {}
         }
 
         function loadPersistedStateSafely() {
             try {
-                const raw = localStorage.getItem('douha_baqarah_audit_v7');
+                const raw = localStorage.getItem('douha_baqarah_audit_v9');
                 if (raw) {
                     const parsed = JSON.parse(raw);
                     if (typeof parsed.currentTrackIndex === 'number') {
@@ -641,9 +585,6 @@
             persistStateSafely();
             if (wakeLock !== null) {
                 wakeLock.release().catch(() => {});
-            }
-            if (registeredSwUrl) {
-                URL.revokeObjectURL(registeredSwUrl);
             }
         }
     </script>
