@@ -1,4 +1,4 @@
-const CACHE_NAME = 'douha-baqarah-v12';
+const CACHE_NAME = 'douha-baqarah-v1';
 const BASE_PATH = '/douha-baqarah/';
 
 const ASSETS_TO_CACHE = [
@@ -47,7 +47,7 @@ self.addEventListener('fetch', (event) => {
                     url.includes('cdnjs') ||
                     url.includes('cdn.tailwindcss.com') ||
                     url.includes('fonts.googleapis.com') ||
-                    url.includes('islamcan.com');
+                    url.includes('fonts.gstatic.com');
 
                 if (shouldCache && networkResponse && networkResponse.status === 200) {
                     const clone = networkResponse.clone();
