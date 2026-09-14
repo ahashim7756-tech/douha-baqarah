@@ -1,8 +1,8 @@
-const CACHE_NAME = 'douha-baqarah-v10';
+const CACHE_NAME = 'douha-baqarah-v11';
 const ASSETS_TO_CACHE = [
-    './',
-    './index.html',
-    './manifest.json',
+    '/douha-baqarah/',
+    '/douha-baqarah/index.html',
+    '/douha-baqarah/manifest.json',
     'https://cdn.tailwindcss.com',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
     'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700&display=swap'
@@ -28,7 +28,7 @@ self.addEventListener('fetch', (event) => {
         caches.match(event.request).then((cachedResponse) => {
             if (cachedResponse) return cachedResponse;
             return fetch(event.request).then((networkResponse) => {
-                if (event.request.url.includes('.mp3') || event.request.url.includes('cdnjs') || event.request.url.includes('jsdelivr') || event.request.url.includes('mp3quran.net')) {
+                if (event.request.url.includes('.mp3') || event.request.url.includes('cdnjs') || event.request.url.includes('mp3quran.net')) {
                     return caches.open(CACHE_NAME).then((cache) => {
                         cache.put(event.request, networkResponse.clone());
                         return networkResponse;
@@ -36,7 +36,7 @@ self.addEventListener('fetch', (event) => {
                 }
                 return networkResponse;
             }).catch(() => {
-                return caches.match('./index.html');
+                return caches.match('/douha-baqarah/index.html');
             });
         })
     );
